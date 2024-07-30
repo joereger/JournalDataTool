@@ -38,6 +38,12 @@ File Structure:
 - mysql_data_exported/: Directory containing exported MySQL data
 - source_data/: Directory containing source MyISAM tables
 
+Example api_keys_and_tokens.txt (in root)
+
+trello_api_key=xxxxxxxx
+trello_token=xxxxxxx
+trello_test_board_id=xxxxxxxx
+
 Usage Instructions:
 1. Mount the MyISAM tables from the source_data folder into a MySQL 5.7 database.
 2. Repair the mounted MyISAM tables if necessary.
