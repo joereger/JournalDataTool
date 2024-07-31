@@ -2,13 +2,15 @@
 api_keys_and_tokens.txt
 source_data/
 mysql_data_exported/
-JoeregerJournalDataTool/
+JournalDataToolVenv/
 exported_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+.DS_Store
 
 # C extensions
 *.so
