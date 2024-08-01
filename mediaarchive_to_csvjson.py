@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from datetime import datetime
 from mediaarchive_csvjson_utils import (
     save_entries_to_json,
@@ -8,6 +9,21 @@ from mediaarchive_csvjson_utils import (
     find_available_day,
     process_media_files
 )
+
+def clean_title(title, date):
+    # Remove date from the beginning of the title if it matches the entry date
+    date_pattern = r'^\d{4}-\d{2}-\d{2}-'
+    if re.match(date_pattern, title):
+        title = re.sub(date_pattern, '', title).strip()
+    
+    # Remove "(Part X of Y)" if Y is 1 or if X equals Y
+    title = re.sub(r'\s*\(Part (\d+) of (\d+)\)\s*', lambda m: "" if m.group(2) == "1" or m.group(1) == m.group(2) else f" (Part {m.group(1)} of {m.group(2)})", title)
+    
+    # If title is empty or just a number, use the date
+    if not title.strip() or title.strip().isdigit():
+        title = date
+    
+    return title.strip()
 
 def process_media_archive(root_dir):
     entries = []
@@ -18,6 +34,10 @@ def process_media_archive(root_dir):
             continue
 
         for subdir, _, files in os.walk(year_path):
+            # Skip .thumbnails folders
+            if os.path.basename(subdir) == ".thumbnails":
+                continue
+
             if not files:
                 continue
 
@@ -36,6 +56,7 @@ def process_media_archive(root_dir):
             # Process each date group
             for date, media_files in date_groups.items():
                 title = folder_name if folder_name != year_dir else "Media"
+                title = clean_title(title, date)
                 entries = process_media_files(entries, date, title, media_files)
 
     # Sort entries by date
@@ -52,9 +73,9 @@ def main():
 
     entries = process_media_archive(root_dir)
 
-    # Generate output filename with timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = f"exported_data/mediaarchive_output_{timestamp}.json"
+    # Generate output filename with timestamp in the format YYYY-MM-DD-HHMMam/pm
+    timestamp = datetime.now().strftime("%Y-%m-%d-%I%M%p").lower()
+    output_file = f"exported_data/MediaArchive_output_{timestamp}.json"
 
     # Ensure the output directory exists
     os.makedirs(os.path.dirname(output_file), exist_ok=True)

@@ -2,6 +2,7 @@ import json
 import csv
 from datetime import datetime
 import os
+import re
 
 def save_entries_to_json(entries, file_path):
     with open(file_path, 'w', encoding='utf-8') as f:
@@ -82,6 +83,21 @@ def find_available_day(entries, year, month):
     # Find the day with the least entries
     return min(day_counts, key=day_counts.get)
 
+def clean_title(title, date):
+    # Remove date from the beginning of the title if it matches the entry date
+    date_pattern = r'^\d{4}-\d{2}-\d{2}-'
+    if re.match(date_pattern, title):
+        title = re.sub(date_pattern, '', title).strip()
+    
+    # Remove "(Part X of Y)" if Y is 1 or if X equals Y
+    title = re.sub(r'\s*\(Part (\d+) of (\d+)\)\s*', lambda m: "" if m.group(2) == "1" or m.group(1) == m.group(2) else f" (Part {m.group(1)} of {m.group(2)})", title)
+    
+    # If title is empty or just a number, use the date
+    if not title.strip() or title.strip().isdigit():
+        title = date
+    
+    return title.strip()
+
 def create_entry(date, title, images, videos, part=None, total_parts=None):
     entry = {
         'id': f"{date}-{title.replace(' ', '_')}",
@@ -92,7 +108,7 @@ def create_entry(date, title, images, videos, part=None, total_parts=None):
         'videos': videos
     }
     
-    if part is not None and total_parts is not None:
+    if part is not None and total_parts is not None and total_parts > 1:
         entry['id'] += f"_part{part}"
         entry['title'] += f" (Part {part} of {total_parts})"
         entry['body'] += f"\n\nThis is part {part} of {total_parts} for this date and folder."
@@ -103,6 +119,8 @@ def process_media_files(entries, date, title, media_files):
     MAX_FILES_PER_POST = 100
     total_parts = (len(media_files) - 1) // MAX_FILES_PER_POST + 1
     
+    cleaned_title = clean_title(title, date)
+    
     for part in range(1, total_parts + 1):
         start_idx = (part - 1) * MAX_FILES_PER_POST
         end_idx = min(part * MAX_FILES_PER_POST, len(media_files))
@@ -110,7 +128,7 @@ def process_media_files(entries, date, title, media_files):
         images = [file for file in media_files[start_idx:end_idx] if file.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
         videos = [file for file in media_files[start_idx:end_idx] if file.lower().endswith(('.mp4', '.mov', '.avi'))]
         
-        entry = create_entry(date, title, images, videos, part, total_parts)
+        entry = create_entry(date, cleaned_title, images, videos, part, total_parts)
         entries.append(entry)
     
     return entries

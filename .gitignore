@@ -129,3 +129,4 @@ dmypy.json
 
 # Local virtual environments
 .localenv/
+.DS_Store
